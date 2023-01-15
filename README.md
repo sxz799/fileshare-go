@@ -13,4 +13,4 @@
 
 #### windows
 `go build -ldflags="-s -w" -o fileServer.exe main.go`
-# fileshare-web
+
