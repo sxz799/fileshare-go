@@ -1,10 +1,10 @@
 # fileshare-server
 
-使用 gin 实现临时文件共享服务后端
+使用 gin+vue 实现临时文件共享服务程序 后端
 
 ## 前端仓库
 
-[PublicFile-Web](https://github.com/sxz799/PublicFile-Web)
+[fileshare-web](https://github.com/sxzhi799/fileshare-web)
 
 ## 编译命令
 
