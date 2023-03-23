@@ -1,6 +1,7 @@
 package gobalConfig
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"log"
 	"os"
@@ -42,4 +43,12 @@ func init() {
 	ShareCodeType = viper.GetInt("config.shareCodeType")
 	ShareCodeLength = viper.GetInt("config.shareCodeLength")
 	FrontMode = viper.GetBool("config.frontMode")
+}
+
+func UseFrontMode(r *gin.Engine) {
+	r.LoadHTMLGlob("static/index.html")
+	r.Static("/static", "static")
+	r.GET("/", func(context *gin.Context) {
+		context.HTML(200, "index.html", "")
+	})
 }

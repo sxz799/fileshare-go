@@ -16,6 +16,7 @@ type FileObj struct {
 	UploadDate   string `json:"uploadDate"`
 	ShareCode    string `json:"shareCode"`
 	FileLocation string `json:"fileLocation"`
+	Finger       string `json:"finger"`
 }
 
 func FileExist(fileName, fileMd5 string) (bool, string) {
@@ -33,7 +34,7 @@ func CodeExist(code string) bool {
 	return util.DB.Where("share_code=?", code).First(&fileObj) == nil
 }
 
-func CreateFile(fileName, fileCode, fileMd5, pathName string, fileSize int64) {
+func CreateFile(fileName, fileCode, fileMd5, pathName, finger string, fileSize int64) {
 	fileObj := FileObj{
 		FileName:     fileName,
 		PathName:     pathName,
@@ -42,6 +43,7 @@ func CreateFile(fileName, fileCode, fileMd5, pathName string, fileSize int64) {
 		UploadDate:   time.Now().Format("2006-01-02 15:04:05"),
 		ShareCode:    fileCode,
 		FileLocation: "file/" + pathName,
+		Finger:       finger,
 	}
 	util.DB.Create(&fileObj)
 }
@@ -52,13 +54,29 @@ func GetFile(fileCode string) (FileObj, error) {
 	return fileObj, err
 }
 
-func DelFile() {
+func AutoDelFile() {
 	var files []FileObj
-
 	util.DB.Where("upload_date < ?", time.Now().Add(-time.Hour*time.Duration(gobalConfig.LimitFileLife)).Format("2006-01-02 15:04:05")).Find(&files)
 	for _, file := range files {
 		AddSystemLog("删除了文件："+file.PathName, "deleteFile")
 		util.DB.Delete(&file)
 		os.Remove("files/" + file.PathName)
 	}
+}
+func DeAllFile() {
+	var files []FileObj
+	util.DB.Find(&files)
+	for _, file := range files {
+		util.DB.Delete(&file)
+		os.Remove("files/" + file.PathName)
+	}
+}
+
+func ListFiles(finger string) (files []FileObj) {
+	util.DB.Where("finger=?", finger).Find(&files)
+	return
+}
+
+func DelFile(id int, finger string) error {
+	return util.DB.Debug().Delete(FileObj{}, "id=? and finger=?", id, finger).Error
 }

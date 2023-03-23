@@ -9,12 +9,16 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
+	"log"
 	"net/url"
+	"strconv"
 	"time"
 )
 
 func upload(c *gin.Context) {
 	file, _ := c.FormFile("file")
+	finger, _ := c.GetPostForm("finger")
+	log.Println(c)
 	pFile, err := file.Open()
 	if err != nil {
 		c.JSON(200, model.Result{
@@ -58,7 +62,7 @@ func upload(c *gin.Context) {
 		})
 		return
 	}
-	model.CreateFile(file.Filename, code, fileMd5, pathName, file.Size)
+	model.CreateFile(file.Filename, code, fileMd5, pathName, finger, file.Size)
 	model.AddSystemLog(c.RemoteIP()+"...上传了文件："+file.Filename, "upload")
 	c.JSON(200, model.Result{
 		Status:  "success",
@@ -106,6 +110,40 @@ func config(c *gin.Context) {
 		"limitFileSize": gobalConfig.LimitFileSize,
 	})
 }
+func list(c *gin.Context) {
+	finger := c.Query("finger")
+	files := model.ListFiles(finger)
+	c.JSON(200, files)
+}
+
+func reset(c *gin.Context) {
+	model.DeAllFile()
+}
+func del(c *gin.Context) {
+	id, err2 := strconv.Atoi(c.Param("id"))
+	finger := c.Param("finger")
+	if err2 != nil {
+		c.JSON(200, model.Result{
+			Status:  "success",
+			Success: false,
+			Message: "删除有误！",
+		})
+	}
+	err := model.DelFile(id, finger)
+	if err != nil {
+		c.JSON(200, model.Result{
+			Status:  "success",
+			Success: false,
+			Message: "文件删除失败！",
+		})
+	} else {
+		c.JSON(200, model.Result{
+			Status:  "success",
+			Success: true,
+			Message: "文件删除成功！",
+		})
+	}
+}
 
 func File(e *gin.Engine) {
 	g := e.Group("/file")
@@ -114,6 +152,9 @@ func File(e *gin.Engine) {
 		g.GET("/exist/:code", exist)
 		g.GET("/download/:code", download)
 		g.GET("/config", config)
+		g.GET("/list", list)
+		g.GET("/del/:id/:finger", del)
+		g.GET("/reset", reset)
 	}
 }
 

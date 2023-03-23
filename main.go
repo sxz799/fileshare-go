@@ -19,15 +19,11 @@ func main() {
 	r := gin.Default()
 	if gobalConfig.FrontMode {
 		log.Println("已开启前后端整合模式！")
-		r.LoadHTMLGlob("static/index.html")
-		r.Static("/static", "static")
-		r.GET("/", func(context *gin.Context) {
-			context.HTML(200, "index.html", "")
-		})
+		gobalConfig.UseFrontMode(r)
 	}
 	router.RegRouter(r)
 	c := cron.New()
-	c.AddFunc("@every 10m", model.DelFile)
+	c.AddFunc("@every 10m", model.AutoDelFile)
 	c.Start()
 	log.Println("定时任务启动成功,服务启动成功,当前使用端口：", gobalConfig.ServerPort)
 	r.Run(":" + gobalConfig.ServerPort)
