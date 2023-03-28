@@ -3,6 +3,7 @@ package model
 import (
 	"fileshare-server/gobalConfig"
 	"fileshare-server/util"
+	"log"
 	"os"
 	"time"
 )
@@ -19,14 +20,36 @@ type FileObj struct {
 	Finger       string `json:"finger"`
 }
 
-func FileExist(fileName, fileMd5 string) (bool, string) {
-	var fileObj FileObj
-	util.DB.Where("file_md5=? and file_name=?", fileMd5, fileName).First(&fileObj)
-	if fileObj.FileSize > 0 {
-		return true, fileObj.ShareCode
+func listFilesByMd5(fileMd5 string) []FileObj {
+	var fileObjs []FileObj
+	util.DB.Where("file_md5=?", fileMd5).Find(&fileObjs)
+	return fileObjs
+}
+
+func FileExist(fileName, fileFinger, fileMd5 string) (md5Exist, sameFinger, sameName bool, pathName, shareCode string) {
+
+	files := listFilesByMd5(fileMd5)
+	if len(files) > 0 {
+		md5Exist = true
+		pathName = files[0].PathName
 	} else {
-		return false, ""
+		return
 	}
+	for _, file := range files {
+		if file.Finger == fileFinger {
+			sameFinger = true
+			break
+		}
+	}
+	for _, file := range files {
+		if file.Finger == fileFinger && file.FileName == fileName {
+			sameName = true
+			shareCode = file.ShareCode
+			break
+		}
+	}
+
+	return
 }
 
 func CodeExist(code string) bool {
@@ -59,8 +82,14 @@ func AutoDelFile() {
 	util.DB.Where("upload_date < ?", time.Now().Add(-time.Hour*time.Duration(gobalConfig.LimitFileLife)).Format("2006-01-02 15:04:05")).Find(&files)
 	for _, file := range files {
 		AddSystemLog("删除了文件："+file.PathName, "deleteFile")
+		num := getNumsByPathName(file.PathName)
+		if num == 1 {
+			err := os.Remove("files/" + file.PathName)
+			if err != nil {
+				log.Println("自动文件删除失败：" + err.Error())
+			}
+		}
 		util.DB.Delete(&file)
-		os.Remove("files/" + file.PathName)
 	}
 }
 func DeAllFile() {
@@ -68,7 +97,10 @@ func DeAllFile() {
 	util.DB.Find(&files)
 	for _, file := range files {
 		util.DB.Delete(&file)
-		os.Remove("files/" + file.PathName)
+		err := os.Remove("files/" + file.PathName)
+		if err != nil {
+			log.Println("全部文件删除失败：" + err.Error())
+		}
 	}
 }
 
@@ -77,6 +109,25 @@ func ListFiles(finger string) (files []FileObj) {
 	return
 }
 
-func DelFile(id int, finger string) error {
-	return util.DB.Debug().Delete(FileObj{}, "id=? and finger=?", id, finger).Error
+func getNumsByPathName(name string) (num int64) {
+	util.DB.Debug().Model(FileObj{}).Where("path_name=?", name).Count(&num)
+	return
+}
+
+func DelFile(shareCode string) error {
+	var fileObj FileObj
+	err := util.DB.Where("share_code=?", shareCode).First(&fileObj).Error
+	if err != nil {
+		return err
+	}
+	num := getNumsByPathName(fileObj.PathName)
+
+	if num == 1 {
+		err := os.Remove("files/" + fileObj.PathName)
+		if err != nil {
+			log.Println("文件删除失败：" + err.Error())
+		}
+	}
+	util.DB.Delete(FileObj{}, "share_code=? ", shareCode)
+	return nil
 }

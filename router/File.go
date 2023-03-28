@@ -9,16 +9,13 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
-	"log"
 	"net/url"
-	"strconv"
 	"time"
 )
 
 func upload(c *gin.Context) {
 	file, _ := c.FormFile("file")
 	finger, _ := c.GetPostForm("finger")
-	log.Println(c)
 	pFile, err := file.Open()
 	if err != nil {
 		c.JSON(200, model.Result{
@@ -32,16 +29,58 @@ func upload(c *gin.Context) {
 	md5h := md5.New()
 	io.Copy(md5h, pFile)
 	fileMd5 := hex.EncodeToString(md5h.Sum(nil))
-	pathName := time.Now().Format("20060102150405") + "_" + file.Filename
-	fileExist, shareCode := model.FileExist(file.Filename, fileMd5)
-	if fileExist {
-		c.JSON(200, model.Result{
-			Status:  "info",
-			Success: true,
-			FileObj: model.FileObj{ShareCode: shareCode},
-			Message: "文件已存在！",
-		})
-		return
+	md5Exist, sameFinger, sameName, pathName, shareCode := model.FileExist(file.Filename, finger, fileMd5)
+	if len(pathName) < 1 {
+		pathName = time.Now().Format("20060102150405")
+	}
+	if md5Exist {
+		if sameFinger {
+			if sameName {
+				c.JSON(200, model.Result{
+					Status:  "success",
+					Success: true,
+					FileObj: model.FileObj{ShareCode: shareCode},
+					Message: "文件已存在！",
+				})
+			} else {
+				success, code := GenerateCode()
+				if !success {
+					c.JSON(200, model.Result{
+						Status:  "error",
+						Success: true,
+						Message: "提取码生成失败,请重试！",
+					})
+					return
+				}
+				model.CreateFile(file.Filename, code, fileMd5, pathName, finger, file.Size)
+				model.AddSystemLog(c.RemoteIP()+"...上传了文件："+file.Filename, "upload")
+				c.JSON(200, model.Result{
+					Status:  "success",
+					Success: true,
+					FileObj: model.FileObj{ShareCode: code},
+					Message: "文件秒传传成功！",
+				})
+			}
+		} else {
+			success, code := GenerateCode()
+			if !success {
+				c.JSON(200, model.Result{
+					Status:  "error",
+					Success: true,
+					Message: "提取码生成失败,请重试！",
+				})
+				return
+			}
+			model.CreateFile(file.Filename, code, fileMd5, pathName, finger, file.Size)
+			model.AddSystemLog(c.RemoteIP()+"...上传了文件："+file.Filename, "upload")
+			c.JSON(200, model.Result{
+				Status:  "success",
+				Success: true,
+				FileObj: model.FileObj{ShareCode: code},
+				Message: "文件秒传传成功！",
+			})
+		}
+
 	} else {
 		err2 := c.SaveUploadedFile(file, "./files/"+pathName)
 		if err2 != nil {
@@ -52,24 +91,25 @@ func upload(c *gin.Context) {
 			})
 			return
 		}
-	}
-	success, code := GenerateCode()
-	if !success {
+		success, code := GenerateCode()
+		if !success {
+			c.JSON(200, model.Result{
+				Status:  "error",
+				Success: true,
+				Message: "提取码生成失败,请重试！",
+			})
+			return
+		}
+		model.CreateFile(file.Filename, code, fileMd5, pathName, finger, file.Size)
+		model.AddSystemLog(c.RemoteIP()+"...上传了文件："+file.Filename, "upload")
 		c.JSON(200, model.Result{
-			Status:  "error",
+			Status:  "success",
 			Success: true,
-			Message: "提取码生成失败,请重试！",
+			FileObj: model.FileObj{ShareCode: code},
+			Message: "文件上传成功！",
 		})
-		return
 	}
-	model.CreateFile(file.Filename, code, fileMd5, pathName, finger, file.Size)
-	model.AddSystemLog(c.RemoteIP()+"...上传了文件："+file.Filename, "upload")
-	c.JSON(200, model.Result{
-		Status:  "success",
-		Success: true,
-		FileObj: model.FileObj{ShareCode: code},
-		Message: "文件上传成功！",
-	})
+
 }
 
 func download(c *gin.Context) {
@@ -120,21 +160,13 @@ func reset(c *gin.Context) {
 	model.DeAllFile()
 }
 func del(c *gin.Context) {
-	id, err2 := strconv.Atoi(c.Param("id"))
-	finger := c.Param("finger")
-	if err2 != nil {
-		c.JSON(200, model.Result{
-			Status:  "success",
-			Success: false,
-			Message: "删除有误！",
-		})
-	}
-	err := model.DelFile(id, finger)
+	shareCode := c.Param("shareCode")
+	err := model.DelFile(shareCode)
 	if err != nil {
 		c.JSON(200, model.Result{
 			Status:  "success",
 			Success: false,
-			Message: "文件删除失败！",
+			Message: "文件删除失败！" + err.Error(),
 		})
 	} else {
 		c.JSON(200, model.Result{
@@ -153,7 +185,7 @@ func File(e *gin.Engine) {
 		g.GET("/download/:code", download)
 		g.GET("/config", config)
 		g.GET("/list", list)
-		g.GET("/del/:id/:finger", del)
+		g.GET("/del/:shareCode", del)
 		g.GET("/reset", reset)
 	}
 }

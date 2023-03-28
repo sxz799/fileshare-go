@@ -23,7 +23,7 @@ func main() {
 	}
 	router.RegRouter(r)
 	c := cron.New()
-	c.AddFunc("@every 10m", model.AutoDelFile)
+	c.AddFunc("@every 30s", model.AutoDelFile)
 	c.Start()
 	log.Println("定时任务启动成功,服务启动成功,当前使用端口：", gobalConfig.ServerPort)
 	r.Run(":" + gobalConfig.ServerPort)
