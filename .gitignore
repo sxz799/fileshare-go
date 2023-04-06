@@ -2,7 +2,7 @@
 node_modules
 /dist
 public_files.db
-
+/files
 # local env files
 .env.local
 .env.*.local
