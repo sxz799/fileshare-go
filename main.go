@@ -25,6 +25,7 @@ func main() {
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
+	config.AllowMethods = []string{"*"}
 	r.Use(cors.New(config))
 
 	router.RegRouter(r)
