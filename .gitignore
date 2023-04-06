@@ -6,6 +6,7 @@ public_files.db
 # local env files
 .env.local
 .env.*.local
+/cert/*
 
 # Log files
 npm-debug.log*
