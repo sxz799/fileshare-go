@@ -178,7 +178,7 @@ func del(c *gin.Context) {
 }
 
 func File(e *gin.Engine) {
-	g := e.Group("/file")
+	g := e.Group("/api")
 	{
 		g.POST("/upload", upload)
 		g.GET("/exist/:code", exist)

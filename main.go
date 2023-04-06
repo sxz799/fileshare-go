@@ -33,7 +33,7 @@ func main() {
 	c.AddFunc("@every 10m", model.AutoDelFile)
 	c.Start()
 	log.Println("定时任务启动成功,服务启动成功,当前使用端口：", gobalConfig.ServerPort)
-	err := r.Run(":" + gobalConfig.ServerPort)
+	err := r.RunTLS(":"+gobalConfig.ServerPort, "cert/pem.pem", "cert/key.key")
 	if err != nil {
 		log.Println(err)
 	}
