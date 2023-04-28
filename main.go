@@ -39,6 +39,7 @@ func main() {
 	log.Println("定时任务启动成功,服务启动成功,当前使用端口：", gobalConfig.ServerPort)
 	err := r.RunTLS(":"+gobalConfig.ServerPort, "cert/pem.pem", "cert/key.key")
 	if err != nil {
-		log.Println(err)
+		log.Println("未找到证书文件，以http运行！")
+		r.Run(":" + gobalConfig.ServerPort)
 	}
 }

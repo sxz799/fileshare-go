@@ -27,9 +27,11 @@ func init() {
 
 func init() {
 	log.Println("正在应用配置文件...")
-	viper.SetConfigName("conf")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath("conf")
+	if _, err := os.Stat("conf/conf.yaml"); os.IsNotExist(err) {
+		viper.SetConfigFile("conf.yaml")
+	} else {
+		viper.SetConfigFile("conf/conf.yaml")
+	}
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Panicln("viper load fail ...")
