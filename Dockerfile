@@ -18,7 +18,9 @@ RUN go env -w GO111MODULE=on \
     && go mod tidy \
     && go build -o app .
 
-FROM golang:1.20-alpine
+FROM alpine:latest
+
+RUN apk add bash
 
 WORKDIR /home
 
