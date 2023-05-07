@@ -18,9 +18,14 @@ RUN go env -w GO111MODULE=on \
     && go mod tidy \
     && go build -o app .
 
+# 使用alpine镜像
 FROM alpine:latest
-
+# 添加bash
 RUN apk add bash
+# 配置时区
+RUN apk update && apk add tzdata 
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 
+RUN echo "Asia/Shanghai" > /etc/timezone
 
 WORKDIR /home
 
@@ -31,6 +36,7 @@ RUN mkdir "cert"
 RUN mkdir "conf"
 RUN mkdir "files"
 
+# 开放端口
 EXPOSE 4000
 
 # 运行应用程序
