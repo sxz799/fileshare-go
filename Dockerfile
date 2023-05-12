@@ -22,7 +22,7 @@ RUN go env -w GO111MODULE=on \
 FROM node:16
 
 
-WORKDIR /gsCheck-web/
+WORKDIR /fileshare-web/
 COPY ./web/ .
 
 
@@ -44,7 +44,7 @@ WORKDIR /home
 
 COPY --from=0 /go/src/github.com/sxz799/fileshare-server/app ./
 COPY --from=0 /go/src/github.com/sxz799/fileshare-server/conf.yaml ./
-COPY --from=1 /gsCheck-web/dist/ ./dist
+COPY --from=1 /fileshare-web/dist/ ./dist
 
 RUN mkdir "cert"
 RUN mkdir "conf"
