@@ -13,7 +13,6 @@ var (
 	ShareCodeType   int
 	ShareCodeLength int
 	ServerPort      string
-	FrontMode       bool
 	GinMode         string
 )
 
@@ -44,12 +43,11 @@ func init() {
 	LimitFileSize = viper.GetInt("config.limitFileSize")
 	ShareCodeType = viper.GetInt("config.shareCodeType")
 	ShareCodeLength = viper.GetInt("config.shareCodeLength")
-	FrontMode = viper.GetBool("config.frontMode")
 }
 
 func UseFrontMode(r *gin.Engine) {
-	r.LoadHTMLGlob("static/index.html")
-	r.Static("/static", "static")
+	r.LoadHTMLGlob("dist/index.html")
+	r.Static("/dist", "dist")
 	r.GET("/", func(context *gin.Context) {
 		context.HTML(200, "index.html", "")
 	})
