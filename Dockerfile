@@ -25,6 +25,8 @@ FROM node:16
 WORKDIR /fileshare-web/
 COPY ./web/ .
 
+RUN rm vue.config.js
+RUN mv vue.config-docker.js vue.config.js
 
 RUN npm config set registry https://registry.npm.taobao.org/ \
     && npm install \
